@@ -177,7 +177,7 @@ def test_iterator_cacher():
                     yield i
 
             _make_temp_file(path1)
-            # _make_temp_file(path2)
+            _make_temp_file(path2)
             # _make_temp_file(kwargpath)
             args1 = (path1, 0, 5)
             l1 = list(g(*args1))

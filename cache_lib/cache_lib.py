@@ -131,6 +131,7 @@ def cacher(
     write_cache_f: t.Callable[[t.Any, str], None] = default_write_cache_f,
     read_cache_f: t.Callable[[str], t.Any] = default_read_cache_f,
     cache_base: str = CACHE_BASE,
+    warn_on_cache_use: bool = False,
 ):
     """A decorator for caching the results of function calls.
 
@@ -167,6 +168,8 @@ def cacher(
                 cache_dir, f, *args, read_cache_sub=read_cache_f, **kwargs
             )
             if cached != "CACHE_DOES_NOT_EXIST":
+                if warn_on_cache_use:
+                    warnings.warn("Using cache")
                 return cached
             out = f(*args, **kwargs)
             os.makedirs(cache_dir, exist_ok=True)
