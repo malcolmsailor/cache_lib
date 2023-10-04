@@ -1,13 +1,13 @@
 import itertools
+import os
 import pickle
 import typing as t
-import os
 import warnings
 
 from cache_lib.get_hash import get_hash
 
 CACHE_BASE = os.getenv(
-    "CACHE_LIB_CACHE", os.path.join(os.getenv("HOME"), ".cache")
+    "CACHE_LIB_CACHE", os.path.join(os.path.expanduser("~"), ".cache")
 )
 
 NO_CACHE = os.getenv("NO_CACHE", None)
@@ -69,6 +69,8 @@ def get_cache_path(cache_dir):
 
 
 def check_f_hash(f, cache_dir):
+    # (Malcolm 2023-10-04) This function should surely be renamed, it checks
+    #   the file modification time rather than making a hash
     f_hash_path = get_f_hash_path(cache_dir)
     if not os.path.exists(f_hash_path):
         return False
@@ -84,9 +86,7 @@ def default_read_cache_f(cache_path: str) -> t.Any:
         return pickle.load(inf)
 
 
-def check_cache(
-    cache_dir, f, *args, read_cache_sub=default_read_cache_f, **kwargs
-):
+def check_cache(cache_dir, f, *args, read_cache_sub=default_read_cache_f, **kwargs):
     if not os.path.exists(cache_dir):
         return "CACHE_DOES_NOT_EXIST"
     if not check_f_hash(f, cache_dir):
@@ -100,8 +100,7 @@ def check_cache(
     if paths:
         paths_mtime = max(os.path.getmtime(p) for p in paths)
         cache_mtime = min(
-            os.path.getmtime(os.path.join(cache_dir, p))
-            for p in os.listdir(cache_dir)
+            os.path.getmtime(os.path.join(cache_dir, p)) for p in os.listdir(cache_dir)
         )
         if cache_mtime <= paths_mtime:
             return "CACHE_DOES_NOT_EXIST"
@@ -157,9 +156,7 @@ def cacher(
 
     def wrap(f):
         if NO_CACHE is not None:
-            warnings.warn(
-                f"NO_CACHE is set, caching of {f.__name__} will be disabled"
-            )
+            warnings.warn(f"NO_CACHE is set, caching of {f.__name__} will be disabled")
             return f
 
         def f1(*args, **kwargs):
@@ -190,9 +187,7 @@ def default_iterator_read_cache_f(cache_path: str) -> t.Iterator[t.Any]:
                 return
 
 
-def default_iterator_write_cache_f(
-    values: t.Iterator[t.Any], cache_path: str
-) -> None:
+def default_iterator_write_cache_f(values: t.Iterator[t.Any], cache_path: str) -> None:
     with open(cache_path, "wb") as outf:
         for value in values:
             pickle.dump(value, outf)
@@ -202,16 +197,12 @@ def iterator_cacher(
     write_cache_f: t.Callable[
         [t.Iterator[t.Any], str], None
     ] = default_iterator_write_cache_f,
-    read_cache_f: t.Callable[
-        [str], t.Iterator[t.Any]
-    ] = default_iterator_read_cache_f,
+    read_cache_f: t.Callable[[str], t.Iterator[t.Any]] = default_iterator_read_cache_f,
     cache_base: str = CACHE_BASE,
 ):
     def wrap(f):
         if NO_CACHE is not None:
-            warnings.warn(
-                f"NO_CACHE is set, caching of {f.__name__} will be disabled"
-            )
+            warnings.warn(f"NO_CACHE is set, caching of {f.__name__} will be disabled")
             return f
 
         def f1(*args, **kwargs):
